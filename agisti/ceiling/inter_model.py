@@ -83,7 +83,11 @@ def compute_cka(
         hsic_xx = (XX_c * XX_c).sum() / ((n - 1) ** 2)
         hsic_yy = (YY_c * YY_c).sum() / ((n - 1) ** 2)
 
-        denom = math.sqrt(hsic_xx * hsic_yy)
+        product = float(hsic_xx * hsic_yy)
+        if product <= 0:
+            return 0.0
+
+        denom = math.sqrt(product)
         if denom < 1e-10:
             return 0.0
 
@@ -113,7 +117,12 @@ def _debiased_cka(K: Tensor, L: Tensor, n: int) -> float:
     hsic_kk = _self_hsic(K_tilde, n)
     hsic_ll = _self_hsic(L_tilde, n)
 
-    denom = math.sqrt(hsic_kk * hsic_ll)
+    # Clamp: debiased HSIC can go negative due to finite samples
+    product = hsic_kk * hsic_ll
+    if product <= 0:
+        return 0.0
+
+    denom = math.sqrt(product)
     if denom < 1e-10:
         return 0.0
 

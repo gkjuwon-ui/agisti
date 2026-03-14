@@ -56,28 +56,50 @@ class DeltaFactory:
         Returns:
             LoRALayerDelta with A, B matrices.
         """
-        if contrast_vector.dim() == 1:
-            contrast_vector = contrast_vector.unsqueeze(0)
-
         # SVD requires float32 (not supported for bf16 on CPU)
         orig_dtype = contrast_vector.dtype
-        contrast_vector = contrast_vector.float()
+        dev = contrast_vector.device
 
-        # SVD decomposition — rank-r approximation
-        U, S, Vt = torch.linalg.svd(contrast_vector, full_matrices=False)
+        if contrast_vector.dim() == 1:
+            # 1D contrast vector (d,) — build rank-r delta via outer product
+            # The contrast vector IS the surgery direction; we construct
+            # A (d, rank) and B (rank, d) such that A @ B ≈ scaled outer product
+            d = contrast_vector.shape[0]
+            v = contrast_vector.float()
+            v_norm = torch.linalg.norm(v)
+            if v_norm < 1e-12:
+                return LoRALayerDelta(
+                    A=torch.zeros(d, rank, device=dev),
+                    B=torch.zeros(rank, d, device=dev),
+                )
+            v_unit = v / v_norm
+            # A columns are the direction; B rows are the direction scaled
+            # This gives a rank-1 outer product spread across `rank` components
+            scale_per_rank = (v_norm / rank) ** 0.5
+            A = v_unit.unsqueeze(1).expand(d, rank) * scale_per_rank
+            B = v_unit.unsqueeze(0).expand(rank, d) * scale_per_rank
+            # Add small orthogonal perturbation to make rank > 1 useful
+            if rank > 1:
+                noise = torch.randn(d, rank - 1, device=dev) * (scale_per_rank * 0.01)
+                A[:, 1:] = noise
+        else:
+            # 2D contrast matrix (d_out, d_in) — standard SVD decomposition
+            contrast_vector = contrast_vector.float()
 
-        effective_rank = min(rank, len(S), U.shape[1], Vt.shape[0])
-        if effective_rank == 0:
-            d_out = contrast_vector.shape[0]
-            d_in = contrast_vector.shape[1] if contrast_vector.dim() > 1 else 1
-            return LoRALayerDelta(
-                A=torch.zeros(d_out, 1, device=contrast_vector.device),
-                B=torch.zeros(1, d_in, device=contrast_vector.device),
-            )
+            U, S, Vt = torch.linalg.svd(contrast_vector, full_matrices=False)
 
-        sqrt_s = S[:effective_rank].sqrt()
-        A = U[:, :effective_rank] * sqrt_s.unsqueeze(0)
-        B = Vt[:effective_rank, :] * sqrt_s.unsqueeze(1)
+            effective_rank = min(rank, len(S), U.shape[1], Vt.shape[0])
+            if effective_rank == 0:
+                d_out = contrast_vector.shape[0]
+                d_in = contrast_vector.shape[1]
+                return LoRALayerDelta(
+                    A=torch.zeros(d_out, 1, device=dev),
+                    B=torch.zeros(1, d_in, device=dev),
+                )
+
+            sqrt_s = S[:effective_rank].sqrt()
+            A = U[:, :effective_rank] * sqrt_s.unsqueeze(0)
+            B = Vt[:effective_rank, :] * sqrt_s.unsqueeze(1)
 
         delta = LoRALayerDelta(A=A, B=B)
 

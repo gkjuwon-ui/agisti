@@ -33,6 +33,7 @@ from agisti.types import (
     ConvergenceAction,
     IterationResult,
     IterationState,
+    LoRADelta,
     PhaseId,
 )
 from agisti.config import (
@@ -445,9 +446,17 @@ class AGISTIOrchestrator:
         # Strategy is updated internally by meta_engine.update()
         self.strategy = self._meta_engine.current_strategy
 
-        # Periodic checkpoint
+        # ── Per-iteration checkpoint (crash-safe) ──
+        # Always save: lightweight log + delta first, then full model
+        self._save_iteration_log(iteration, result, score)
+        if result.accepted and result.delta is not None:
+            self._save_delta(iteration, result.delta)
+
+        # Full model checkpoint only at configured interval
+        # (expensive for 72B: ~135GB per save, so don't do every iteration)
         if (
             iteration > 0
+            and self.iter_config.checkpoint_every > 0
             and iteration % self.iter_config.checkpoint_every == 0
         ):
             self._save_checkpoint(iteration, score)
@@ -565,6 +574,62 @@ class AGISTIOrchestrator:
             )
         except Exception as e:
             logger.warning("Checkpoint save failed (non-fatal): %s", e)
+
+    def _save_iteration_log(
+        self,
+        iteration: int,
+        result: IterationResult,
+        score: float,
+    ) -> None:
+        """
+        Append a lightweight JSON line to the iteration log.
+
+        This is crash-safe: even if the process dies mid-iteration,
+        all completed iterations are logged. Cost: ~1KB per iteration.
+        """
+        import json
+        log_path = self.output_dir / "iteration_log.jsonl"
+        try:
+            entry = {
+                "iteration": iteration,
+                "epoch": result.epoch,
+                "accepted": result.accepted,
+                "rejection_reason": result.rejection_reason,
+                "delta_norm": result.proposed_delta_norm,
+                "quick_bench_score": score,
+                "quick_bench_scores": result.quick_bench_scores,
+                "virtual_loss_before": result.virtual_loss_before,
+                "virtual_loss_after": result.virtual_loss_after,
+                "wall_time_s": result.wall_time_seconds,
+                "total_accepted": self._stats.total_accepted,
+                "total_rejected": self._stats.total_rejected,
+            }
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, default=str) + "\n")
+                f.flush()
+            logger.info("Iteration %d logged to %s", iteration, log_path)
+        except Exception as e:
+            logger.warning("Iteration log write failed (non-fatal): %s", e)
+
+    def _save_delta(self, iteration: int, delta: LoRADelta) -> None:
+        """
+        Save accepted surgery delta to disk (lightweight, LoRA format).
+
+        Deltas are tiny (~100KB for rank-16 LoRA on a few layers)
+        compared to full model checkpoints (~135GB for 72B).
+        """
+        from agisti.surgery.delta import DeltaSerializer
+        delta_dir = self.output_dir / "deltas"
+        delta_dir.mkdir(parents=True, exist_ok=True)
+        delta_path = delta_dir / f"delta_iter{iteration:04d}.safetensors"
+        try:
+            DeltaSerializer.save(delta, delta_path)
+            logger.info(
+                "Saved accepted delta for iteration %d (%d layers, norm=%.6f)",
+                iteration, len(delta), delta.norm(),
+            )
+        except Exception as e:
+            logger.warning("Delta save failed (non-fatal): %s", e)
 
     def _resume(self, checkpoint_path: str) -> None:
         """Resume from a checkpoint."""

@@ -552,16 +552,24 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
             "trust_remote_code": True,
             "device_map": ref_device,
         }
-        # 7B 이하는 bfloat16, 그 이상은 8bit
-        try:
-            from transformers import BitsAndBytesConfig
-            ref_load_kwargs["quantization_config"] = BitsAndBytesConfig(
-                load_in_8bit=True,
-            )
-            logger.info("    참조 모델 8bit 로딩")
-        except ImportError:
+        # VRAM 여유 있으면 bfloat16, 아니면 8bit
+        total_vram = sum(
+            torch.cuda.get_device_properties(i).total_memory
+            for i in range(n_gpus)
+        ) / 1e9
+        if not args.load_in_8bit and not args.load_in_4bit and total_vram > 400:
             ref_load_kwargs["torch_dtype"] = torch.bfloat16
-            logger.info("    참조 모델 bfloat16 로딩 (bitsandbytes 미설치)")
+            logger.info("    참조 모델 bfloat16 로딩 (VRAM 여유: %.0fGB)", total_vram)
+        else:
+            try:
+                from transformers import BitsAndBytesConfig
+                ref_load_kwargs["quantization_config"] = BitsAndBytesConfig(
+                    load_in_8bit=True,
+                )
+                logger.info("    참조 모델 8bit 로딩")
+            except ImportError:
+                ref_load_kwargs["torch_dtype"] = torch.bfloat16
+                logger.info("    참조 모델 bfloat16 로딩 (bitsandbytes 미설치)")
 
         ref_model = AutoModelForCausalLM.from_pretrained(
             args.ref_model, **ref_load_kwargs,
@@ -729,7 +737,7 @@ def run_orchestrator(args, model, tokenizer, base_components,
     iter_config = IterationConfig(
         problems_per_iteration=args.problems_per_iter,
         virtual_train_steps=args.virtual_train_steps,
-        checkpoint_every=args.epoch_size,
+        checkpoint_every=args.epoch_size,  # Full model save every epoch
         lora_rank=args.lora_rank,
         trace_activations=True,
         surgery_budget=args.surgery_budget,
@@ -770,8 +778,8 @@ def run_orchestrator(args, model, tokenizer, base_components,
     )
 
     ckpt_config = CheckpointConfig(
-        keep_last_n=5,
-        keep_every_nth=10,
+        keep_last_n=3,  # Keep last 3 (save disk on 72B ~135GB each)
+        keep_every_nth=5,
     )
     output_dir = Path(args.output_dir)
 
@@ -955,8 +963,7 @@ def _eval_gsm8k(model, tokenizer, input_device, n=50):
     import re
     from datasets import load_dataset
 
-    ds = load_dataset("openai/gsm8k", "main", split="test",
-                      trust_remote_code=True)
+    ds = load_dataset("openai/gsm8k", "main", split="test")
     correct = 0
 
     for i in range(min(n, len(ds))):
@@ -999,8 +1006,7 @@ def _eval_arc(model, tokenizer, input_device, n=50):
     """ARC-Challenge 추론 벤치마크 직접 평가."""
     from datasets import load_dataset
 
-    ds = load_dataset("allenai/ai2_arc", "ARC-Challenge", split="test",
-                      trust_remote_code=True)
+    ds = load_dataset("allenai/ai2_arc", "ARC-Challenge", split="test")
     correct = 0
 
     for i in range(min(n, len(ds))):
