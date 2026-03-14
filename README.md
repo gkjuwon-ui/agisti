@@ -117,14 +117,6 @@ The model generated its own math problems, found 9 it answered incorrectly, prop
 
 A 1.2% probe improvement in one cycle is small. But it is a **positive signal** — self-improvement occurred without any external teacher. The question is whether this compounds over hundreds or thousands of iterations.
 
-### Technical Challenges Solved
-
-| Challenge | Solution |
-|-----------|----------|
-| 72B doesn't fit in memory during surgery | 8-bit quantization (144 GB → 76 GB), freeing 212 GB headroom |
-| PyTorch 2.4.1 missing `set_submodule` | Runtime monkey-patch of `torch.nn.Module` |
-| 20 GB disk quota for 144 GB model weights | `/dev/shm` (352 GB tmpfs) as cache and checkpoint storage |
-| Model too accurate on self-generated problems | Lowered `min_wrong_samples` threshold; increased problem difficulty |
 
 ## Project Structure
 
