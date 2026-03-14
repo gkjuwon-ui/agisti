@@ -541,7 +541,7 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
     # ─── Level 3: Cross-Model Pollination ────────
     if not args.skip_cross and args.ref_model:
         from agisti.ceiling.inter_model import (
-            InterModelCrossPollinator,
+            InterModelSurgery,
             compute_cka,
             compute_procrustes,
         )
@@ -549,7 +549,7 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
         logger.info("  [Level 3] Cross-Model 교차수분 활성화")
         logger.info("    참조 모델: %s", args.ref_model)
 
-        # 참조 모델 로딩 (작은 모델이므로 1개 GPU에)
+        # 참조 모델 로딩 (8bit로 VRAM 절약)
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         ref_tokenizer = AutoTokenizer.from_pretrained(
@@ -558,19 +558,43 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
         if ref_tokenizer.pad_token is None:
             ref_tokenizer.pad_token = ref_tokenizer.eos_token
 
-        # 마지막 GPU에 참조 모델 올리기
+        # 마지막 GPU에 참조 모델 올리기 (8bit 양자화)
         n_gpus = torch.cuda.device_count()
         ref_device = f"cuda:{n_gpus - 1}" if n_gpus > 1 else "cuda:0"
+        ref_load_kwargs = {
+            "trust_remote_code": True,
+            "device_map": ref_device,
+        }
+        # 7B 이하는 bfloat16, 그 이상은 8bit
+        try:
+            from transformers import BitsAndBytesConfig
+            ref_load_kwargs["quantization_config"] = BitsAndBytesConfig(
+                load_in_8bit=True,
+            )
+            logger.info("    참조 모델 8bit 로딩")
+        except ImportError:
+            ref_load_kwargs["torch_dtype"] = torch.bfloat16
+            logger.info("    참조 모델 bfloat16 로딩 (bitsandbytes 미설치)")
+
         ref_model = AutoModelForCausalLM.from_pretrained(
-            args.ref_model,
-            torch_dtype=torch.bfloat16,
-            trust_remote_code=True,
-            device_map=ref_device,
+            args.ref_model, **ref_load_kwargs,
         )
         ref_model.eval()
 
+        # InterModelSurgery 인스턴스 생성
+        cross_surgery = InterModelSurgery(
+            target_model=model,
+            tokenizer_target=tokenizer,
+        )
+        cross_surgery.register_reference(
+            name=args.ref_model.split('/')[-1],
+            model=ref_model,
+            tokenizer=ref_tokenizer,
+        )
+
         ceiling_components["ref_model"] = ref_model
         ceiling_components["ref_tokenizer"] = ref_tokenizer
+        ceiling_components["cross_surgery"] = cross_surgery
         ceiling_components["cross_pollinator_tools"] = {
             "compute_cka": compute_cka,
             "compute_procrustes": compute_procrustes,
@@ -792,6 +816,10 @@ def run_orchestrator(args, model, tokenizer, base_components,
     if ceiling_components:
         _inject_ceiling_breakers(orchestrator, ceiling_components, advanced_surgery)
 
+    # Level 3: 교차수분 사전 매핑 (CKA + Procrustes)
+    if "cross_surgery" in ceiling_components:
+        _build_cross_mappings(ceiling_components, model, tokenizer)
+
     stats = orchestrator.run(
         max_epochs=max_epochs,
         max_iterations=args.iterations,
@@ -813,6 +841,8 @@ def _inject_ceiling_breakers(orchestrator, ceiling_components, advanced_surgery)
     if "ref_model" in ceiling_components:
         orchestrator._ref_model = ceiling_components["ref_model"]
         orchestrator._ref_tokenizer = ceiling_components["ref_tokenizer"]
+    if "cross_surgery" in ceiling_components:
+        orchestrator._cross_surgery = ceiling_components["cross_surgery"]
 
     # 복합 발견
     if "compositional_generator" in ceiling_components:
@@ -823,6 +853,193 @@ def _inject_ceiling_breakers(orchestrator, ceiling_components, advanced_surgery)
         orchestrator._signal_blender = advanced_surgery["blender"]
     if "ext_proposer" in advanced_surgery:
         orchestrator._ext_proposer = advanced_surgery["ext_proposer"]
+
+
+def _build_cross_mappings(ceiling_components, model, tokenizer):
+    """Level 3 교차수분을 위한 CKA 레이어 매핑 사전 빌드."""
+    cross_surgery = ceiling_components["cross_surgery"]
+    logger.info("  [Level 3] CKA 레이어 매핑 빌드 시작...")
+
+    # 프로브 텍스트: 간단한 수학/추론 문제로 활성화 패턴 수집
+    probe_texts = [
+        "What is 15 + 27?",
+        "If x = 3 and y = 5, what is x * y?",
+        "The capital of France is",
+        "Water boils at what temperature in Celsius?",
+        "def fibonacci(n): return",
+    ]
+
+    # 타겟 레이어 자동 감지
+    target_layers = []
+    for name, mod in model.named_modules():
+        if isinstance(mod, torch.nn.Linear):
+            if any(k in name for k in ('o_proj', 'down_proj')):
+                target_layers.append(name)
+    # 균등 분포로 5개만
+    if len(target_layers) > 5:
+        step = len(target_layers) // 5
+        target_layers = target_layers[::step][:5]
+
+    try:
+        cross_surgery.build_mappings(
+            probe_texts=probe_texts,
+            target_layers=target_layers,
+        )
+        logger.info("  [Level 3] CKA 매핑 완료: %d 레이어", len(target_layers))
+    except Exception as e:
+        logger.warning("  [Level 3] CKA 매핑 실패 (무시): %s", e)
+
+
+# ═══════════════════════════════════════════════════
+# Step 9.5: 정식 벤치마크 평가 (Pre/Post Surgery)
+# ═══════════════════════════════════════════════════
+
+
+def run_formal_benchmark(model, tokenizer, args, label="pre"):
+    """
+    GSM8K, ARC 정식 벤치마크 점수 측정.
+
+    QuickBench와 별개로, 실제 공개 벤치마크 문제로 모델 능력 측정.
+    """
+    from agisti.benchmark.external_validator import (
+        DynamicExternalValidator,
+        ExternalBenchmarkSpec,
+    )
+    from agisti.generation.verification import AnswerVerifier
+    from agisti.types import AnswerType
+
+    logger.info("[FORMAL BENCH] %s-surgery 정식 벤치마크 평가 시작", label)
+
+    specs = [
+        ExternalBenchmarkSpec(
+            name="gsm8k",
+            source="huggingface",
+            path_or_url="openai/gsm8k",
+            answer_type=AnswerType.EXACT_MATCH,
+            domain="math",
+            max_problems=100,
+            metadata={"split": "test", "question_field": "question",
+                       "answer_field": "answer"},
+        ),
+        ExternalBenchmarkSpec(
+            name="arc_challenge",
+            source="huggingface",
+            path_or_url="allenai/ai2_arc",
+            answer_type=AnswerType.EXACT_MATCH,
+            domain="reasoning",
+            max_problems=100,
+            metadata={"split": "test", "question_field": "question",
+                       "answer_field": "answerKey"},
+        ),
+    ]
+
+    validator = DynamicExternalValidator(
+        benchmark_specs=specs,
+        verifier=AnswerVerifier(),
+        max_gen_tokens=args.max_gen_tokens,
+    )
+
+    results = {}
+    for spec in specs:
+        try:
+            # DynamicExternalValidator.validate() 사용
+            val_results = validator.validate(
+                model=model,
+                tokenizer=tokenizer,
+                spec_names=[spec.name],
+            )
+            if spec.name in val_results:
+                score = val_results[spec.name].accuracy
+                results[spec.name] = score
+                logger.info("  [%s] %s: %.1f%%", label.upper(), spec.name, score * 100)
+            else:
+                raise RuntimeError("No result returned")
+        except Exception as e:
+            logger.warning("  [%s] %s validator 실패: %s — manual fallback", label.upper(), spec.name, e)
+            # Fallback: 직접 평가
+            try:
+                score = _eval_benchmark_manual(model, tokenizer, spec, args)
+                results[spec.name] = score
+                logger.info("  [%s] %s (manual): %.1f%%", label.upper(), spec.name, score * 100)
+            except Exception as e2:
+                logger.warning("  [%s] %s manual 평가도 실패: %s", label.upper(), spec.name, e2)
+                results[spec.name] = None
+
+    # 메모리 정리
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    return results
+
+
+def _eval_benchmark_manual(model, tokenizer, spec, args):
+    """벤치마크를 수동으로 평가 (validator 실패 시 폴백)."""
+    from datasets import load_dataset
+
+    ds = load_dataset(
+        spec.path_or_url,
+        split=spec.metadata.get("split", "test"),
+        trust_remote_code=True,
+    )
+
+    q_field = spec.metadata.get("question_field", "question")
+    a_field = spec.metadata.get("answer_field", "answer")
+
+    # 최대 100개 샘플
+    n = min(spec.max_problems, len(ds))
+    indices = list(range(n))
+
+    correct = 0
+    total = 0
+
+    for idx in indices:
+        row = ds[idx]
+        question = str(row[q_field])
+        expected = str(row[a_field])
+
+        # GSM8K: 답에서 숫자만 추출
+        if spec.name == "gsm8k":
+            import re
+            nums = re.findall(r'[\-]?\d[\d,]*\.?\d*', expected)
+            if nums:
+                expected = nums[-1].replace(',', '')
+
+        prompt = f"Question: {question}\nAnswer (short):"
+        inputs = tokenizer(
+            prompt, return_tensors="pt", truncation=True, max_length=2048,
+        )
+        device = next(model.parameters()).device
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=64,
+                do_sample=False,
+            )
+
+        answer = tokenizer.decode(
+            outputs[0][inputs["input_ids"].shape[1]:],
+            skip_special_tokens=True,
+        ).strip()
+
+        # 답 비교
+        if spec.name == "gsm8k":
+            import re
+            nums = re.findall(r'[\-]?\d[\d,]*\.?\d*', answer)
+            pred = nums[-1].replace(',', '') if nums else answer
+            if pred == expected:
+                correct += 1
+        else:
+            if expected.lower() in answer.lower():
+                correct += 1
+        total += 1
+
+        # 10문제마다 메모리 정리
+        if total % 10 == 0:
+            torch.cuda.empty_cache()
+
+    return correct / total if total > 0 else 0.0
 
 
 # ═══════════════════════════════════════════════════
@@ -1002,6 +1219,10 @@ def main():
         # 7. 외부 벤치마크 검증기
         external_validator = build_external_validator(args)
 
+        # 7.5. PRE-SURGERY 정식 벤치마크 평가
+        logger.info("[7.5/9] Pre-surgery 정식 벤치마크 평가")
+        pre_bench = run_formal_benchmark(model, tokenizer, args, label="pre")
+
         # 8. 오케스트레이터 실행
         stats = run_orchestrator(
             args, model, tokenizer, base_components,
@@ -1012,6 +1233,36 @@ def main():
         # 9. 결과 보고
         elapsed = time.time() - t_start
         print_report(stats, elapsed, args, ceiling_components)
+
+        # 9.5. POST-SURGERY 정식 벤치마크 평가
+        logger.info("[9.5/9] Post-surgery 정식 벤치마크 평가")
+        post_bench = run_formal_benchmark(model, tokenizer, args, label="post")
+
+        # 정식 벤치마크 비교 출력
+        print("\n" + "=" * 70)
+        print("  FORMAL BENCHMARK COMPARISON (Pre vs Post Surgery)")
+        print("=" * 70)
+        for name in set(list(pre_bench.keys()) + list(post_bench.keys())):
+            pre_score = pre_bench.get(name)
+            post_score = post_bench.get(name)
+            pre_str = f"{pre_score*100:.1f}%" if pre_score is not None else "N/A"
+            post_str = f"{post_score*100:.1f}%" if post_score is not None else "N/A"
+            delta = ""
+            if pre_score is not None and post_score is not None:
+                diff = (post_score - pre_score) * 100
+                delta = f" ({'+' if diff >= 0 else ''}{diff:.1f}%)"
+            print(f"  {name:20s} {pre_str:>8s} → {post_str:>8s}{delta}")
+        print("=" * 70)
+
+        # 벤치마크 결과 JSON 저장
+        bench_results = {
+            "pre_surgery": {k: v for k, v in pre_bench.items() if v is not None},
+            "post_surgery": {k: v for k, v in post_bench.items() if v is not None},
+        }
+        bench_path = Path(args.output_dir) / "formal_benchmark_results.json"
+        bench_path.parent.mkdir(parents=True, exist_ok=True)
+        bench_path.write_text(json.dumps(bench_results, indent=2), encoding="utf-8")
+        logger.info("정식 벤치마크 결과 저장: %s", bench_path)
 
         # HuggingFace Hub 업로드 (디스크 부족 해결)
         upload_to_hf(model, tokenizer, args, stats)
