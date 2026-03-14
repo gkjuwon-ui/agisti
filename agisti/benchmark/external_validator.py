@@ -112,8 +112,10 @@ class HuggingFaceBenchmarkFetcher(ExternalBenchmarkFetcher):
             return []
 
         try:
+            config_name = spec.metadata.get("config", None)
             dataset = load_dataset(
                 spec.path_or_url,
+                config_name,
                 split=spec.metadata.get("split", "test"),
             )
 

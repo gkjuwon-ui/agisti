@@ -470,6 +470,7 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
         # GSM8K — 수학
         gsm8k_fetcher = HuggingFaceFetcher(
             dataset_name="openai/gsm8k",
+            config_name="main",
             split="test",
             question_field="question",
             answer_field="answer",
@@ -485,6 +486,7 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
         # ARC Challenge — 추론
         arc_fetcher = HuggingFaceFetcher(
             dataset_name="allenai/ai2_arc",
+            config_name="ARC-Challenge",
             split="test",
             question_field="question",
             answer_field="answerKey",
@@ -497,23 +499,8 @@ def build_ceiling_breakers(args, model, tokenizer, frozen_mask):
         ))
         ext_signal._fetcher_cache["arc"] = arc_fetcher
 
-        # MMLU — 도메인 지식
-        mmlu_fetcher = HuggingFaceFetcher(
-            dataset_name="cais/mmlu",
-            split="test",
-            question_field="question",
-            answer_field="answer",
-            answer_type=AnswerType.EXACT_MATCH,
-        )
-        ext_signal.register_source("mmlu", ExtSrcCfg(
-            name="mmlu",
-            fetcher_class=type(mmlu_fetcher),
-            max_problems_per_batch=500,
-        ))
-        ext_signal._fetcher_cache["mmlu"] = mmlu_fetcher
-
         ceiling_components["external_signal"] = ext_signal
-        logger.info("    등록 완료: gsm8k, arc, mmlu")
+        logger.info("    등록 완료: gsm8k, arc")
     else:
         logger.info("  [Level 1] 외부 Signal 비활성화 (--skip-external)")
 
@@ -694,7 +681,8 @@ def build_external_validator(args):
             answer_type=AnswerType.EXACT_MATCH,
             domain="math",
             max_problems=200,
-            metadata={"split": "test", "question_field": "question",
+            metadata={"split": "test", "config": "main",
+                       "question_field": "question",
                        "answer_field": "answer"},
         ),
         ExternalBenchmarkSpec(
@@ -704,7 +692,8 @@ def build_external_validator(args):
             answer_type=AnswerType.EXACT_MATCH,
             domain="reasoning",
             max_problems=200,
-            metadata={"split": "test", "question_field": "question",
+            metadata={"split": "test", "config": "ARC-Challenge",
+                       "question_field": "question",
                        "answer_field": "answerKey"},
         ),
     ]
@@ -890,6 +879,31 @@ def _build_cross_mappings(ceiling_components, model, tokenizer):
         logger.warning("  [Level 3] CKA 매핑 실패 (무시): %s", e)
 
 
+def _report_cross_signal(ceiling_components):
+    """Level 3 교차수분 CKA 매핑 결과 보고."""
+    cross_surgery = ceiling_components.get("cross_surgery")
+    if not cross_surgery:
+        return
+
+    try:
+        report = cross_surgery.get_cross_report()
+        print("\n" + "=" * 70)
+        print("  LEVEL 3: CROSS-MODEL POLLINATION REPORT")
+        print("=" * 70)
+        for ref_name, info in report.get("mappings", {}).items():
+            print(f"  Reference model: {ref_name}")
+            print(f"  Mapped layers: {info['mapped_layers']}")
+            print(f"  Average CKA similarity: {info['avg_cka']:.4f}")
+            for layer in info.get("layers", []):
+                err = layer["alignment_error"]
+                err_str = f", Procrustes error={err:.4f}" if err is not None else ""
+                print(f"    {layer['target_layer']} ↔ {layer['ref_layer']}"
+                      f" (CKA={layer['cka_score']:.4f}{err_str})")
+        print("=" * 70)
+    except Exception as e:
+        logger.warning("  [Level 3] 보고 실패: %s", e)
+
+
 # ═══════════════════════════════════════════════════
 # Step 9.5: 정식 벤치마크 평가 (Pre/Post Surgery)
 # ═══════════════════════════════════════════════════
@@ -897,149 +911,139 @@ def _build_cross_mappings(ceiling_components, model, tokenizer):
 
 def run_formal_benchmark(model, tokenizer, args, label="pre"):
     """
-    GSM8K, ARC 정식 벤치마크 점수 측정.
+    GSM8K, ARC-Challenge 정식 벤치마크 점수 측정.
 
-    QuickBench와 별개로, 실제 공개 벤치마크 문제로 모델 능력 측정.
+    DynamicExternalValidator 거치지 않고 직접 HuggingFace 데이터셋에서
+    문제를 가져와서 평가. 각 데이터셋의 고유 포맷을 정확히 처리.
     """
-    from agisti.benchmark.external_validator import (
-        DynamicExternalValidator,
-        ExternalBenchmarkSpec,
-    )
-    from agisti.generation.verification import AnswerVerifier
-    from agisti.types import AnswerType
-
+    import re
     logger.info("[FORMAL BENCH] %s-surgery 정식 벤치마크 평가 시작", label)
 
-    specs = [
-        ExternalBenchmarkSpec(
-            name="gsm8k",
-            source="huggingface",
-            path_or_url="openai/gsm8k",
-            answer_type=AnswerType.EXACT_MATCH,
-            domain="math",
-            max_problems=100,
-            metadata={"split": "test", "question_field": "question",
-                       "answer_field": "answer"},
-        ),
-        ExternalBenchmarkSpec(
-            name="arc_challenge",
-            source="huggingface",
-            path_or_url="allenai/ai2_arc",
-            answer_type=AnswerType.EXACT_MATCH,
-            domain="reasoning",
-            max_problems=100,
-            metadata={"split": "test", "question_field": "question",
-                       "answer_field": "answerKey"},
-        ),
-    ]
-
-    validator = DynamicExternalValidator(
-        benchmark_specs=specs,
-        verifier=AnswerVerifier(),
-        max_gen_tokens=args.max_gen_tokens,
-    )
-
     results = {}
-    for spec in specs:
-        try:
-            # DynamicExternalValidator.validate() 사용
-            val_results = validator.validate(
-                model=model,
-                tokenizer=tokenizer,
-                spec_names=[spec.name],
-            )
-            if spec.name in val_results:
-                score = val_results[spec.name].accuracy
-                results[spec.name] = score
-                logger.info("  [%s] %s: %.1f%%", label.upper(), spec.name, score * 100)
-            else:
-                raise RuntimeError("No result returned")
-        except Exception as e:
-            logger.warning("  [%s] %s validator 실패: %s — manual fallback", label.upper(), spec.name, e)
-            # Fallback: 직접 평가
-            try:
-                score = _eval_benchmark_manual(model, tokenizer, spec, args)
-                results[spec.name] = score
-                logger.info("  [%s] %s (manual): %.1f%%", label.upper(), spec.name, score * 100)
-            except Exception as e2:
-                logger.warning("  [%s] %s manual 평가도 실패: %s", label.upper(), spec.name, e2)
-                results[spec.name] = None
+    input_device = next(model.parameters()).device
 
-    # 메모리 정리
+    # ─── GSM8K ───
+    logger.info("  Evaluating GSM8K...")
+    try:
+        results["gsm8k"] = _eval_gsm8k(model, tokenizer, input_device, n=50)
+        logger.info("  [%s] GSM8K: %.1f%% (%d/50)",
+                    label.upper(), results["gsm8k"] * 100,
+                    int(results["gsm8k"] * 50))
+    except Exception as e:
+        logger.warning("  [%s] GSM8K 실패: %s", label.upper(), e)
+        results["gsm8k"] = None
+    torch.cuda.empty_cache()
+
+    # ─── ARC-Challenge ───
+    logger.info("  Evaluating ARC-Challenge...")
+    try:
+        results["arc_challenge"] = _eval_arc(model, tokenizer, input_device, n=50)
+        logger.info("  [%s] ARC-Challenge: %.1f%% (%d/50)",
+                    label.upper(), results["arc_challenge"] * 100,
+                    int(results["arc_challenge"] * 50))
+    except Exception as e:
+        logger.warning("  [%s] ARC-Challenge 실패: %s", label.upper(), e)
+        results["arc_challenge"] = None
+
     torch.cuda.empty_cache()
     gc.collect()
-
     return results
 
 
-def _eval_benchmark_manual(model, tokenizer, spec, args):
-    """벤치마크를 수동으로 평가 (validator 실패 시 폴백)."""
+def _eval_gsm8k(model, tokenizer, input_device, n=50):
+    """GSM8K 수학 벤치마크 직접 평가."""
+    import re
     from datasets import load_dataset
 
-    ds = load_dataset(
-        spec.path_or_url,
-        split=spec.metadata.get("split", "test"),
-        trust_remote_code=True,
-    )
-
-    q_field = spec.metadata.get("question_field", "question")
-    a_field = spec.metadata.get("answer_field", "answer")
-
-    # 최대 100개 샘플
-    n = min(spec.max_problems, len(ds))
-    indices = list(range(n))
-
+    ds = load_dataset("openai/gsm8k", "main", split="test",
+                      trust_remote_code=True)
     correct = 0
-    total = 0
 
-    for idx in indices:
-        row = ds[idx]
-        question = str(row[q_field])
-        expected = str(row[a_field])
+    for i in range(min(n, len(ds))):
+        row = ds[i]
+        question = row["question"]
+        answer_text = row["answer"]
 
-        # GSM8K: 답에서 숫자만 추출
-        if spec.name == "gsm8k":
-            import re
-            nums = re.findall(r'[\-]?\d[\d,]*\.?\d*', expected)
-            if nums:
-                expected = nums[-1].replace(',', '')
+        # GSM8K 정답 포맷: "...\n#### 42"
+        match = re.search(r'####\s*([\-]?[\d,]+\.?\d*)', answer_text)
+        expected = match.group(1).replace(',', '') if match else ""
 
-        prompt = f"Question: {question}\nAnswer (short):"
-        inputs = tokenizer(
-            prompt, return_tensors="pt", truncation=True, max_length=2048,
-        )
-        device = next(model.parameters()).device
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        prompt = f"Question: {question}\nAnswer (give only the final number):"
+        inputs = tokenizer(prompt, return_tensors="pt",
+                           truncation=True, max_length=2048)
+        inputs = {k: v.to(input_device) for k, v in inputs.items()}
 
         with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=64,
-                do_sample=False,
-            )
+            out = model.generate(**inputs, max_new_tokens=128, do_sample=False)
 
-        answer = tokenizer.decode(
-            outputs[0][inputs["input_ids"].shape[1]:],
+        response = tokenizer.decode(
+            out[0][inputs["input_ids"].shape[1]:],
             skip_special_tokens=True,
         ).strip()
 
-        # 답 비교
-        if spec.name == "gsm8k":
-            import re
-            nums = re.findall(r'[\-]?\d[\d,]*\.?\d*', answer)
-            pred = nums[-1].replace(',', '') if nums else answer
-            if pred == expected:
-                correct += 1
-        else:
-            if expected.lower() in answer.lower():
-                correct += 1
-        total += 1
+        # 응답에서 숫자 추출
+        pred_nums = re.findall(r'[\-]?\d[\d,]*\.?\d*', response)
+        pred = pred_nums[-1].replace(',', '') if pred_nums else ""
 
-        # 10문제마다 메모리 정리
-        if total % 10 == 0:
+        if pred == expected:
+            correct += 1
+
+        if (i + 1) % 10 == 0:
             torch.cuda.empty_cache()
+            logger.info("    GSM8K: %d/%d done, %d correct", i + 1, n, correct)
 
-    return correct / total if total > 0 else 0.0
+    return correct / n if n > 0 else 0.0
+
+
+def _eval_arc(model, tokenizer, input_device, n=50):
+    """ARC-Challenge 추론 벤치마크 직접 평가."""
+    from datasets import load_dataset
+
+    ds = load_dataset("allenai/ai2_arc", "ARC-Challenge", split="test",
+                      trust_remote_code=True)
+    correct = 0
+
+    for i in range(min(n, len(ds))):
+        row = ds[i]
+        question = row["question"]
+        choices = row["choices"]
+        expected = row["answerKey"]  # "A", "B", "C", or "D"
+
+        # 선택지 포맷팅
+        choices_text = ""
+        if isinstance(choices, dict) and "text" in choices and "label" in choices:
+            for label, text in zip(choices["label"], choices["text"]):
+                choices_text += f"\n{label}. {text}"
+
+        prompt = (f"Question: {question}{choices_text}\n"
+                  f"Answer (just the letter A, B, C, or D):")
+        inputs = tokenizer(prompt, return_tensors="pt",
+                           truncation=True, max_length=2048)
+        inputs = {k: v.to(input_device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            out = model.generate(**inputs, max_new_tokens=16, do_sample=False)
+
+        response = tokenizer.decode(
+            out[0][inputs["input_ids"].shape[1]:],
+            skip_special_tokens=True,
+        ).strip()
+
+        # 응답에서 A/B/C/D 추출
+        pred = ""
+        for ch in response:
+            if ch.upper() in "ABCD":
+                pred = ch.upper()
+                break
+
+        if pred == expected.upper():
+            correct += 1
+
+        if (i + 1) % 10 == 0:
+            torch.cuda.empty_cache()
+            logger.info("    ARC: %d/%d done, %d correct", i + 1, n, correct)
+
+    return correct / n if n > 0 else 0.0
 
 
 # ═══════════════════════════════════════════════════
@@ -1234,6 +1238,10 @@ def main():
         elapsed = time.time() - t_start
         print_report(stats, elapsed, args, ceiling_components)
 
+        # 9.3. Level 3 Cross-Signal 보고
+        if "cross_surgery" in ceiling_components:
+            _report_cross_signal(ceiling_components)
+
         # 9.5. POST-SURGERY 정식 벤치마크 평가
         logger.info("[9.5/9] Post-surgery 정식 벤치마크 평가")
         post_bench = run_formal_benchmark(model, tokenizer, args, label="post")
@@ -1270,8 +1278,16 @@ def main():
     except KeyboardInterrupt:
         logger.warning("사용자에 의해 중단됨")
         sys.exit(130)
+    except torch.cuda.OutOfMemoryError:
+        logger.error("=" * 60)
+        logger.error("  GPU OOM! 메모리 부족으로 서버가 동강났습니다")
+        logger.error("  주인님 돈이 다됐구나~ 라고 말씀드리겠습니다")
+        logger.error("=" * 60)
+        traceback.print_exc()
+        sys.exit(1)
     except Exception as e:
         logger.error("Phase 2 실패: %s", e)
+        logger.error("  서버 동이 났으면: 주인님 돈이 다됐구나~")
         traceback.print_exc()
         sys.exit(1)
     finally:

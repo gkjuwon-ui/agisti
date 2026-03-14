@@ -144,8 +144,10 @@ class HuggingFaceFetcher(ExternalFetcher):
         question_field: str = "question",
         answer_field: str = "answer",
         answer_type: AnswerType = AnswerType.EXACT_MATCH,
+        config_name: str | None = None,
     ):
         self.dataset_name = dataset_name
+        self.config_name = config_name
         self.split = split
         self.question_field = question_field
         self.answer_field = answer_field
@@ -163,7 +165,7 @@ class HuggingFaceFetcher(ExternalFetcher):
             return []
 
         try:
-            ds = load_dataset(self.dataset_name, split=self.split)
+            ds = load_dataset(self.dataset_name, self.config_name, split=self.split)
         except Exception as e:
             logger.warning("Failed to load dataset %s: %s", self.dataset_name, e)
             return []
