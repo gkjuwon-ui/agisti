@@ -50,7 +50,7 @@ This is not AGI. But it may be a **mechanism** by which AGI eventually emerges â
 
 ```
 +------------------------------------------------------------+
-|                 AGISTI Self-Improvement Loop                |
+|                 AGISTI Self-Improvement Loop               |
 |                                                            |
 |  +-----------+    +------------+    +-------------------+  |
 |  |  Active   |    |  Problem   |    |  Model Solves     |  |
@@ -63,8 +63,8 @@ This is not AGI. But it may be a **mechanism** by which AGI eventually emerges â
 |                                               |            |
 |  +-----------+    +------------+    +---------v---------+  |
 |  | QuickBench|<---| Delta      |<---|    Surgery        |  |
-|  | Validator |    | Applicator |    |    Proposer        |  |
-|  |(gatekeeper)    | (LoRA)     |    |  (micro-surgery)   |  |
+|  | Validator |    | Applicator |    |    Proposer       |  |
+|  |(gatekeeper)    | (LoRA)     |    |  (micro-surgery)  |  |
 |  +-----+-----+    +------------+    +-------------------+  |
 |        |                                                   |
 |   PASS -> accept surgery, next iteration                   |
