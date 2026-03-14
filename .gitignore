@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+agisti_output/
+agisti_h100.tar.gz
+agisti_phase2.tar.gz
+agisti_upload.tar.gz
+*.tar.gz
+.git/
+.venv/
+*.log

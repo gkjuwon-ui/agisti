@@ -1,0 +1,90 @@
+{"id": "math_001", "question": "What is 7 + 13?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "20", "tolerance": 0.0}
+{"id": "math_002", "question": "What is 15 * 4?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "60", "tolerance": 0.0}
+{"id": "math_003", "question": "What is 100 - 37?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "63", "tolerance": 0.0}
+{"id": "math_004", "question": "What is 144 / 12?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "12", "tolerance": 0.0}
+{"id": "math_005", "question": "What is 2^8?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "256", "tolerance": 0.0}
+{"id": "math_006", "question": "What is 17 * 23?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "391", "tolerance": 0.0}
+{"id": "math_007", "question": "What is the square root of 81?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "9", "tolerance": 0.0}
+{"id": "math_008", "question": "What is 3^4?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "81", "tolerance": 0.0}
+{"id": "math_009", "question": "What is 1000 - 567?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "433", "tolerance": 0.0}
+{"id": "math_010", "question": "What is 25 * 25?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "625", "tolerance": 0.0}
+{"id": "math_011", "question": "What is 48 + 52?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "100", "tolerance": 0.0}
+{"id": "math_012", "question": "What is 7 * 8?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "56", "tolerance": 0.0}
+{"id": "math_013", "question": "What is 200 / 8?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "25", "tolerance": 0.0}
+{"id": "math_014", "question": "What is 11 * 11?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "121", "tolerance": 0.0}
+{"id": "math_015", "question": "What is 2^10?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "1024", "tolerance": 0.0}
+{"id": "math_016", "question": "What is 99 + 101?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "200", "tolerance": 0.0}
+{"id": "math_017", "question": "What is 13 * 7?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "91", "tolerance": 0.0}
+{"id": "math_018", "question": "What is 500 - 123?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "377", "tolerance": 0.0}
+{"id": "math_019", "question": "What is 16 * 16?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "256", "tolerance": 0.0}
+{"id": "math_020", "question": "What is 729 / 27?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "27", "tolerance": 0.0}
+{"id": "logic_001", "question": "If all cats are animals and all animals breathe, do all cats breathe? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "yes", "tolerance": 0.0}
+{"id": "logic_002", "question": "If A > B and B > C, is A > C? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "yes", "tolerance": 0.0}
+{"id": "logic_003", "question": "If it is raining then the ground is wet. The ground is wet. Is it necessarily raining? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "no", "tolerance": 0.0}
+{"id": "logic_004", "question": "True AND False = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "false", "tolerance": 0.0}
+{"id": "logic_005", "question": "True OR False = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "true", "tolerance": 0.0}
+{"id": "logic_006", "question": "NOT True = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "false", "tolerance": 0.0}
+{"id": "logic_007", "question": "If P implies Q and P is true, what is Q? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "true", "tolerance": 0.0}
+{"id": "logic_008", "question": "All dogs are mammals. Rex is a dog. Is Rex a mammal? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "yes", "tolerance": 0.0}
+{"id": "logic_009", "question": "If no fish can fly and a salmon is a fish, can a salmon fly? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "no", "tolerance": 0.0}
+{"id": "logic_010", "question": "There are 3 boxes. The red box is to the left of the blue box. The green box is to the right of the blue box. Which box is in the middle?", "domain": "logic", "answer_type": "exact_match", "expected_answer": "blue", "tolerance": 0.0}
+{"id": "logic_011", "question": "If x = 5 and y = x + 3, what is y?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "8", "tolerance": 0.0}
+{"id": "logic_012", "question": "How many even numbers are there between 1 and 10 (exclusive)?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "4", "tolerance": 0.0}
+{"id": "logic_013", "question": "True XOR True = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "false", "tolerance": 0.0}
+{"id": "logic_014", "question": "If a number is divisible by 6, is it divisible by 3? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "yes", "tolerance": 0.0}
+{"id": "logic_015", "question": "What comes next in the sequence: 2, 4, 8, 16, ?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "32", "tolerance": 0.0}
+{"id": "logic_016", "question": "A is taller than B. C is shorter than B. Who is the tallest?", "domain": "logic", "answer_type": "exact_match", "expected_answer": "A", "tolerance": 0.0}
+{"id": "logic_017", "question": "How many prime numbers are there between 1 and 10?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "4", "tolerance": 0.0}
+{"id": "logic_018", "question": "If today is Wednesday, what day was it 3 days ago?", "domain": "logic", "answer_type": "exact_match", "expected_answer": "Sunday", "tolerance": 0.0}
+{"id": "logic_019", "question": "What is the next prime number after 7?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "11", "tolerance": 0.0}
+{"id": "logic_020", "question": "In a race, you pass the person in 2nd place. What place are you in now?", "domain": "logic", "answer_type": "exact_match", "expected_answer": "2nd", "tolerance": 0.0}
+{"id": "knowledge_001", "question": "What is the capital of France? Answer with just the city name.", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Paris", "tolerance": 0.0}
+{"id": "knowledge_002", "question": "What is the chemical symbol for water?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "H2O", "tolerance": 0.0}
+{"id": "knowledge_003", "question": "How many planets are in our solar system?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "8", "tolerance": 0.0}
+{"id": "knowledge_004", "question": "What is the largest ocean on Earth?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Pacific", "tolerance": 0.0}
+{"id": "knowledge_005", "question": "How many continents are there?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "7", "tolerance": 0.0}
+{"id": "knowledge_006", "question": "What gas do plants absorb from the atmosphere? Answer with the gas name.", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "carbon dioxide", "tolerance": 0.0}
+{"id": "knowledge_007", "question": "What is the speed of light in km/s approximately?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "300000", "tolerance": 1000.0}
+{"id": "knowledge_008", "question": "Who wrote Romeo and Juliet? Answer with the last name only.", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Shakespeare", "tolerance": 0.0}
+{"id": "knowledge_009", "question": "What is the boiling point of water in Celsius?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "100", "tolerance": 0.0}
+{"id": "knowledge_010", "question": "How many sides does a hexagon have?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "6", "tolerance": 0.0}
+{"id": "knowledge_011", "question": "What is the chemical symbol for gold?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Au", "tolerance": 0.0}
+{"id": "knowledge_012", "question": "What is the largest mammal?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "blue whale", "tolerance": 0.0}
+{"id": "knowledge_013", "question": "What year did World War II end?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "1945", "tolerance": 0.0}
+{"id": "knowledge_014", "question": "How many bones are in the adult human body?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "206", "tolerance": 0.0}
+{"id": "knowledge_015", "question": "What is the smallest prime number?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "2", "tolerance": 0.0}
+{"id": "knowledge_016", "question": "What is the capital of Japan? Answer with just the city name.", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Tokyo", "tolerance": 0.0}
+{"id": "knowledge_017", "question": "What planet is known as the Red Planet?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Mars", "tolerance": 0.0}
+{"id": "knowledge_018", "question": "How many legs does a spider have?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "8", "tolerance": 0.0}
+{"id": "knowledge_019", "question": "What is the freezing point of water in Celsius?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "0", "tolerance": 0.0}
+{"id": "knowledge_020", "question": "What is the chemical formula for table salt?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "NaCl", "tolerance": 0.0}
+{"id": "coding_001", "question": "What is the output of: print(len('hello'))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "5", "tolerance": 0.0}
+{"id": "coding_002", "question": "What is the output of: print(list(range(5)))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "[0, 1, 2, 3, 4]", "tolerance": 0.0}
+{"id": "coding_003", "question": "What is the output of: print(type(42).__name__)?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "int", "tolerance": 0.0}
+{"id": "coding_004", "question": "What does 'hello'[::-1] evaluate to in Python?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "olleh", "tolerance": 0.0}
+{"id": "coding_005", "question": "What is the output of: print(sum([1, 2, 3, 4, 5]))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "15", "tolerance": 0.0}
+{"id": "coding_006", "question": "What is the output of: print(max(3, 1, 4, 1, 5, 9))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "9", "tolerance": 0.0}
+{"id": "coding_007", "question": "What is the output of: print(2 ** 5)?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "32", "tolerance": 0.0}
+{"id": "coding_008", "question": "What is the output of: print(10 % 3)?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "1", "tolerance": 0.0}
+{"id": "coding_009", "question": "What is the output of: print(sorted([3, 1, 4, 1, 5]))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "[1, 1, 3, 4, 5]", "tolerance": 0.0}
+{"id": "coding_010", "question": "What is the output of: print(10 // 3)?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "3", "tolerance": 0.0}
+{"id": "coding_011", "question": "What is the output of: print('hello' + ' ' + 'world')?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "hello world", "tolerance": 0.0}
+{"id": "coding_012", "question": "What is the output of: print(abs(-42))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "42", "tolerance": 0.0}
+{"id": "coding_013", "question": "What is the output of: print(bool(0))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "False", "tolerance": 0.0}
+{"id": "coding_014", "question": "What is the output of: print(bool(1))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "True", "tolerance": 0.0}
+{"id": "coding_015", "question": "How many elements are in the set {1, 2, 2, 3, 3, 3}?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "3", "tolerance": 0.0}
+{"id": "coding_016", "question": "What is the output of: print('abc'.upper())?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "ABC", "tolerance": 0.0}
+{"id": "coding_017", "question": "What is the output of: print(list('hello'))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "['h', 'e', 'l', 'l', 'o']", "tolerance": 0.0}
+{"id": "coding_018", "question": "What is the output of: print(min(5, 2, 8, 1, 3))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "1", "tolerance": 0.0}
+{"id": "coding_019", "question": "What is the output of: print(round(3.7))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "4", "tolerance": 0.0}
+{"id": "coding_020", "question": "What is the output of: print(len({'a': 1, 'b': 2, 'c': 3}))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "3", "tolerance": 0.0}
+{"id": "reading_001", "question": "In the sentence 'The cat sat on the mat', what did the cat sit on?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "mat", "tolerance": 0.0}
+{"id": "reading_002", "question": "Complete: 'To be or not to ____'. What is the missing word?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "be", "tolerance": 0.0}
+{"id": "reading_003", "question": "What is the opposite of 'hot'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "cold", "tolerance": 0.0}
+{"id": "reading_004", "question": "What is a synonym for 'happy'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "glad", "tolerance": 0.0}
+{"id": "reading_005", "question": "What is the plural of 'mouse'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "mice", "tolerance": 0.0}
+{"id": "reading_006", "question": "What is the past tense of 'go'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "went", "tolerance": 0.0}
+{"id": "reading_007", "question": "What is the opposite of 'above'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "below", "tolerance": 0.0}
+{"id": "reading_008", "question": "How many syllables are in the word 'banana'?", "domain": "reading", "answer_type": "numeric_range", "expected_answer": "3", "tolerance": 0.0}
+{"id": "reading_009", "question": "What is the comparative form of 'good'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "better", "tolerance": 0.0}
+{"id": "reading_010", "question": "What is the opposite of 'ancient'?", "domain": "reading", "answer_type": "exact_match", "expected_answer": "modern", "tolerance": 0.0}

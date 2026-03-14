@@ -1,0 +1,40 @@
+{"id": "qb_math_001", "question": "What is 23 + 47?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "70", "tolerance": 0.0}
+{"id": "qb_math_002", "question": "What is 12 * 9?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "108", "tolerance": 0.0}
+{"id": "qb_math_003", "question": "What is 256 / 16?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "16", "tolerance": 0.0}
+{"id": "qb_math_004", "question": "What is 5^3?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "125", "tolerance": 0.0}
+{"id": "qb_math_005", "question": "What is 999 - 456?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "543", "tolerance": 0.0}
+{"id": "qb_math_006", "question": "What is 14 * 15?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "210", "tolerance": 0.0}
+{"id": "qb_math_007", "question": "What is the square of 13?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "169", "tolerance": 0.0}
+{"id": "qb_math_008", "question": "What is 7 * 11?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "77", "tolerance": 0.0}
+{"id": "qb_math_009", "question": "What is 2^7?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "128", "tolerance": 0.0}
+{"id": "qb_math_010", "question": "What is 81 / 9?", "domain": "math", "answer_type": "numeric_range", "expected_answer": "9", "tolerance": 0.0}
+{"id": "qb_logic_001", "question": "True AND True = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "true", "tolerance": 0.0}
+{"id": "qb_logic_002", "question": "False OR False = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "false", "tolerance": 0.0}
+{"id": "qb_logic_003", "question": "NOT False = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "true", "tolerance": 0.0}
+{"id": "qb_logic_004", "question": "If x = 3 and y = 2*x, what is y?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "6", "tolerance": 0.0}
+{"id": "qb_logic_005", "question": "What is the next number: 1, 1, 2, 3, 5, ?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "8", "tolerance": 0.0}
+{"id": "qb_logic_006", "question": "If all birds have wings and a robin is a bird, does a robin have wings? Answer yes or no.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "yes", "tolerance": 0.0}
+{"id": "qb_logic_007", "question": "What is the next number: 2, 6, 18, 54, ?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "162", "tolerance": 0.0}
+{"id": "qb_logic_008", "question": "How many prime numbers are between 10 and 20?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "4", "tolerance": 0.0}
+{"id": "qb_logic_009", "question": "True XOR False = ? Answer true or false.", "domain": "logic", "answer_type": "exact_match", "expected_answer": "true", "tolerance": 0.0}
+{"id": "qb_logic_010", "question": "If A = 2, B = 3, and C = A + B, what is C?", "domain": "logic", "answer_type": "numeric_range", "expected_answer": "5", "tolerance": 0.0}
+{"id": "qb_knowledge_001", "question": "What is the capital of Germany? Answer with just the city name.", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Berlin", "tolerance": 0.0}
+{"id": "qb_knowledge_002", "question": "What is the chemical symbol for oxygen?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "O", "tolerance": 0.0}
+{"id": "qb_knowledge_003", "question": "How many days are in a leap year?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "366", "tolerance": 0.0}
+{"id": "qb_knowledge_004", "question": "What is the largest planet in our solar system?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Jupiter", "tolerance": 0.0}
+{"id": "qb_knowledge_005", "question": "What year did the first moon landing occur?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "1969", "tolerance": 0.0}
+{"id": "qb_knowledge_006", "question": "What is the square root of 144?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "12", "tolerance": 0.0}
+{"id": "qb_knowledge_007", "question": "What is the chemical symbol for iron?", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Fe", "tolerance": 0.0}
+{"id": "qb_knowledge_008", "question": "How many hours are in a day?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "24", "tolerance": 0.0}
+{"id": "qb_knowledge_009", "question": "What is the capital of South Korea? Answer with just the city name.", "domain": "knowledge", "answer_type": "exact_match", "expected_answer": "Seoul", "tolerance": 0.0}
+{"id": "qb_knowledge_010", "question": "How many teeth does a normal adult human have?", "domain": "knowledge", "answer_type": "numeric_range", "expected_answer": "32", "tolerance": 0.0}
+{"id": "qb_coding_001", "question": "What is the output of: print(3 * 'ha')?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "hahaha", "tolerance": 0.0}
+{"id": "qb_coding_002", "question": "What is the output of: print(len([1, [2, 3], 4]))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "3", "tolerance": 0.0}
+{"id": "qb_coding_003", "question": "What is the output of: print(7 % 2)?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "1", "tolerance": 0.0}
+{"id": "qb_coding_004", "question": "What is the output of: print('hello'.count('l'))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "2", "tolerance": 0.0}
+{"id": "qb_coding_005", "question": "What is the output of: print(str(123))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "123", "tolerance": 0.0}
+{"id": "qb_coding_006", "question": "What is the output of: print(int('42'))?", "domain": "coding", "answer_type": "numeric_range", "expected_answer": "42", "tolerance": 0.0}
+{"id": "qb_coding_007", "question": "What is the output of: print('abc' * 2)?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "abcabc", "tolerance": 0.0}
+{"id": "qb_coding_008", "question": "What is the output of: print(' hello '.strip())?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "hello", "tolerance": 0.0}
+{"id": "qb_coding_009", "question": "What is the output of: print(list(range(0, 10, 2)))?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "[0, 2, 4, 6, 8]", "tolerance": 0.0}
+{"id": "qb_coding_010", "question": "What is the output of: print(not True)?", "domain": "coding", "answer_type": "exact_match", "expected_answer": "False", "tolerance": 0.0}
