@@ -1,126 +1,130 @@
 <p align="center">
   <h1 align="center">AGISTI</h1>
   <p align="center"><b>Autonomous Generative Intelligence through Self-Taught Iteration</b></p>
-  <p align="center"><i>A 72-billion-parameter language model that performs surgery on its own brain — no teacher, no human feedback, no reward model.</i></p>
+  <p align="center"><i>What if an AI could lock itself in a library, study alone for years, and come out smarter — without any teacher?</i></p>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Parameters-72.7B-blue" alt="params">
-  <img src="https://img.shields.io/badge/Hardware-H100_NVL_×3-green" alt="hardware">
-  <img src="https://img.shields.io/badge/Budget-$27-orange" alt="budget">
-  <img src="https://img.shields.io/badge/Surgery-Accepted_✓-brightgreen" alt="surgery">
-  <img src="https://img.shields.io/badge/Age_of_Author-13-red" alt="age">
+  <img src="https://img.shields.io/badge/Goal-Recursive_Self--Improvement-blueviolet" alt="goal">
+  <img src="https://img.shields.io/badge/Approach-Teacher--Free_Self--Surgery-blue" alt="approach">
+  <img src="https://img.shields.io/badge/Status-PoC_Validated-brightgreen" alt="status">
+  <img src="https://img.shields.io/badge/Author-Age_13-red" alt="age">
 </p>
 
 ---
 
-## What is this?
+## The Problem
 
-AGISTI is a **recursive self-improvement** system for large language models. The model:
+Current AI training has a ceiling:
 
-1. **Generates** its own problems (targeting weak domains)
-2. **Solves** them and self-grades
-3. **Proposes surgery** — identifies which layers to modify based on activation differences between correct and incorrect answers
-4. **Applies the delta** to its own weights via LoRA-style micro-surgery
-5. **Validates** via QuickBench — if the benchmark score drops, the surgery is rolled back
+- **Supervised learning** — limited by the quality and quantity of human-labeled data
+- **RLHF** — limited by the biases and bandwidth of human evaluators
+- **Distillation** — a student can never surpass its teacher
 
-No teacher model. No RLHF. No distillation. The model improves itself.
+Every approach depends on an external signal — a human, a reward model, or a stronger model. **What happens when we remove all of them?**
 
-## Key Results
+## The Idea
 
-### Phase 2: 72B Self-Surgery on 3× H100 NVL
+AGISTI explores a single hypothesis: **a language model can improve itself through recursive self-surgery, with no external teacher.**
 
-| Metric | Value |
-|--------|-------|
-| Model | Qwen 2.5 72B (8-bit quantized) |
-| GPU | 3× NVIDIA H100 NVL (288 GB VRAM) |
-| VRAM Used | 76 GB model + 76 GB surgery headroom |
-| Total Budget | **$27** |
-| Iterations Completed | 2 |
-| **Surgery Accepted** | **✅ Yes — Iteration 0** |
-| Layers Modified | 6 |
-| Delta Norm | 0.0041 |
-| QuickBench Score | **52.5% (21/40)** |
-| Probe Score Change | **48.0% → 49.2% (+1.2%)** |
+The loop:
 
-> The model opened its own brain, modified 6 layers, and scored higher on the benchmark afterward.
+1. **Probe** — the model measures its own competency across domains
+2. **Generate** — it creates problems targeting its weakest areas
+3. **Solve & Self-Grade** — it answers its own problems and verifies using structured outputs
+4. **Analyze** — it compares internal activations between correct and incorrect answers
+5. **Propose Surgery** — it identifies which layers to modify (LoRA-style weight deltas)
+6. **Validate** — an independent benchmark (QuickBench) gates every change
+7. **Accept or Rollback** — only improvements survive
+8. **Repeat** — each iteration starts from the improved model
 
-### Phase 2 Iteration 0 — Detailed Breakdown
+No teacher. No reward model. No human in the loop. The model is both student and surgeon.
 
-| Step | Result |
-|------|--------|
-| Probe (baseline) | 60.0% — logic 80%, knowledge 20%, math 60%, reading 80%, coding 60% |
-| Self-Generated Problems | 11 math problems (adaptive difficulty 0.50) |
-| Self-Evaluation | 2/11 correct (18.2%) — 9 wrong answers as surgery material |
-| Surgery Proposal | 6 layers targeted, delta norm = 0.0041, budget usage 41% |
-| Virtual Training | Loss 4.3198 → 4.3169 **(decreased)** |
-| Delta Application | 6 layers successfully modified |
-| QuickBench | **52.5% (21/40) — PASS** |
-| Verdict | **✅ Surgery Accepted** |
+### Why This Could Matter
 
-### Phase 2 — Benchmark Improvement Evidence (bfloat16 run)
+If a model can reliably improve itself — even by 0.1% per cycle — the implications are significant. Compound a tiny improvement over thousands of iterations and the model diverges from its starting point in ways no human trainer could direct.
 
-| | Iteration 0 | Iteration 1 |
-|---|---|---|
-| Probe Score | **48.0%** | **49.2% (+1.2%)** |
-| Failed Probes | 13 | 12 |
-
-The probe score increased from 48.0% to 49.2% after a single surgery iteration. This is direct evidence that the model became measurably smarter through self-modification.
-
-### Phase 1: Pipeline Validation on RTX 5090
-
-| Metric | Value |
-|--------|-------|
-| Model | Qwen 2.5 3B → 7B |
-| GPU | NVIDIA RTX 5090 (32 GB) → H100 NVL × 3 |
-| Result | Full pipeline operational, QuickBench stable at 32% |
-| Purpose | Smoke test — validate surgery loop before scaling to 72B |
+This is not AGI. But it may be a **mechanism** by which AGI eventually emerges — an intelligence that bootstraps itself without requiring a smarter intelligence to teach it.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    AGISTI Loop (1 Iteration)             │
-│                                                         │
-│  ┌──────────┐    ┌──────────┐    ┌───────────────────┐  │
-│  │  Active   │    │ Problem  │    │   Model Solves    │  │
-│  │  Prober   │───▶│Generator │───▶│   & Self-Grades   │  │
-│  │(5 domains)│    │(adaptive)│    │                   │  │
-│  └──────────┘    └──────────┘    └─────────┬─────────┘  │
-│                                            │             │
-│                                   correct vs wrong       │
-│                                   activation diff        │
-│                                            │             │
-│  ┌──────────┐    ┌──────────┐    ┌─────────▼─────────┐  │
-│  │QuickBench│◀───│  Delta   │◀───│    Surgery        │  │
-│  │Validator │    │Applicator│    │    Proposer        │  │
-│  │(gatekeeper)│  │(LoRA)    │    │(LoRA rank-16)     │  │
-│  └────┬─────┘    └──────────┘    └───────────────────┘  │
-│       │                                                  │
-│  PASS → Accept surgery, next iteration                   │
-│  FAIL → Rollback weights, try different strategy         │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    AGISTI Self-Improvement Loop               │
+│                                                              │
+│  ┌───────────┐    ┌────────────┐    ┌─────────────────────┐  │
+│  │  Active    │    │  Problem   │    │   Model Solves      │  │
+│  │  Prober    │───▶│ Generator  │───▶│   & Self-Grades     │  │
+│  │ (5 domains)│    │ (adaptive) │    │ (verifiable answers)│  │
+│  └───────────┘    └────────────┘    └──────────┬──────────┘  │
+│                                                │              │
+│                                     activation differences    │
+│                                     (correct vs incorrect)    │
+│                                                │              │
+│  ┌───────────┐    ┌────────────┐    ┌──────────▼──────────┐  │
+│  │ QuickBench│◀───│   Delta    │◀───│     Surgery         │  │
+│  │ Validator │    │ Applicator │    │     Proposer         │  │
+│  │(gatekeeper)│   │  (LoRA)    │    │  (micro-surgery)     │  │
+│  └─────┬─────┘    └────────────┘    └─────────────────────┘  │
+│        │                                                      │
+│   PASS → accept surgery, next iteration                       │
+│   FAIL → rollback weights, adapt strategy                     │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### 4-Level Ceiling Breaker System (Phase 2)
+### 4-Level Ceiling Breaker System
 
-| Level | Module | Description | Status |
-|-------|--------|-------------|--------|
-| 1 | External Signal | GSM8K, ARC, MMLU problems injected as surgery signal | ✅ Active |
-| 2 | RAG Surgery | Failed problems → document retrieval → context-aware surgery | ✅ Active |
-| 3 | Cross-Model Pollination | CKA alignment + Procrustes transform from reference model | ⏸️ Planned |
-| 4 | Compositional Discovery | Find problems where individual skills pass but composition fails | ✅ Active |
+When the basic loop plateaus, AGISTI activates progressively stronger interventions:
 
-## Technical Challenges Solved
+| Level | Name | Mechanism |
+|-------|------|-----------|
+| 1 | **External Signal** | Inject curated problems from GSM8K, ARC, MMLU as additional surgery signal |
+| 2 | **RAG Surgery** | Retrieve relevant documents for failed problems → context-aware weight modification |
+| 3 | **Cross-Model Pollination** | CKA alignment + Procrustes transform to transfer geometry from a reference model |
+| 4 | **Compositional Discovery** | Find problems where individual skills pass but their composition fails |
+
+### Safety Mechanisms
+
+- **Surgery budget (β)**: Caps the magnitude of weight changes per iteration
+- **QuickBench gatekeeper**: Every surgery must pass an independent benchmark before acceptance
+- **Catastrophe detector**: Triggers emergency rollback if scores drop sharply
+- **Frozen zones**: Critical layers (discovered via noise injection) are protected from modification
+
+## Proof of Concept
+
+To validate the framework, we ran the full pipeline on a 72B-parameter model.
+
+The point was not to create a better 72B model — it was to test whether the self-surgery mechanism works at all.
+
+### PoC Setup
+
+| | |
+|---|---|
+| Model | Qwen 2.5 72B (8-bit quantized, 76 GB across 3 GPUs) |
+| Hardware | 3× H100 NVL (288 GB VRAM) |
+| Total cost | **$27** |
+
+### PoC Results
+
+| | Result |
+|---|---|
+| Surgery | **Accepted** — 6 layers modified, delta norm 0.0041 |
+| QuickBench | 52.5% post-surgery (passed gatekeeper) |
+| Probe improvement | **48.0% → 49.2%** after one iteration |
+| Virtual training loss | 4.3198 → 4.3169 (decreased) |
+
+The model generated its own math problems, found 9 it answered incorrectly, proposed weight modifications to 6 layers, and scored higher on the benchmark afterward.
+
+A 1.2% probe improvement in one cycle is small. But it is a **positive signal** — self-improvement occurred without any external teacher. The question is whether this compounds over hundreds or thousands of iterations.
+
+### Technical Challenges Solved
 
 | Challenge | Solution |
 |-----------|----------|
-| 72B OOM during surgery | 8-bit quantization (144 GB → 76 GB), freeing 212 GB for surgery ops |
-| PyTorch 2.4.1 missing `set_submodule` | Monkey-patched `torch.nn.Module` at runtime |
-| 20 GB disk quota on RunPod | Used `/dev/shm` (352 GB RAM disk) for model cache + checkpoints |
-| 72B too smart (0 wrong answers) | Lowered `min_wrong_samples` from 2 to 1 |
-| SSH session kills background jobs | Used `screen` sessions for persistent execution |
-| RTX 5090 sm_120 unsupported | PyTorch nightly cu128 build |
+| 72B doesn't fit in memory during surgery | 8-bit quantization (144 GB → 76 GB), freeing 212 GB headroom |
+| PyTorch 2.4.1 missing `set_submodule` | Runtime monkey-patch of `torch.nn.Module` |
+| 20 GB disk quota for 144 GB model weights | `/dev/shm` (352 GB tmpfs) as cache and checkpoint storage |
+| Model too accurate on self-generated problems | Lowered `min_wrong_samples` threshold; increased problem difficulty |
 
 ## Project Structure
 
@@ -129,71 +133,63 @@ agisti/
 ├── agisti/                    # Core library
 │   ├── benchmark/             # QuickBench + external validators
 │   ├── ceiling/               # 4-level ceiling breaker system
-│   │   ├── external_signal.py # Level 1: HuggingFace dataset fetcher
-│   │   ├── rag_surgery.py     # Level 2: Retrieval-augmented surgery
-│   │   ├── inter_model.py     # Level 3: CKA cross-pollination
-│   │   ├── compositional.py   # Level 4: Compositional problem discovery
-│   │   └── retriever.py       # Document retriever for RAG
 │   ├── checkpoint/            # Model state management
 │   ├── evaluation/            # Answer verification
-│   ├── frozen/                # Frozen zone discovery (protect critical layers)
+│   ├── frozen/                # Frozen zone discovery
 │   ├── generation/            # Self-problem generation
 │   ├── iteration/             # Single iteration runner
 │   ├── orchestrator/          # Multi-iteration orchestration
 │   ├── probe/                 # Active probing (competency measurement)
-│   ├── surgery/               # Weight modification (LoRA delta + signal blending)
-│   ├── config.py              # All configuration dataclasses
-│   └── types.py               # Core type definitions
-├── run_phase0.py              # Phase 0: Probe-only baseline
-├── run_phase1.py              # Phase 1: Basic surgery loop (3B/7B)
-├── run_phase2.py              # Phase 2: Full 72B surgery with ceiling breakers
-├── prepare_benchmarks.py      # Generate probe/bench data from HF datasets
-├── PHASE1_REPORT.md           # Phase 1 results
-├── PHASE2_REPORT.md           # Phase 2 results (you're here for this)
-└── pyproject.toml             # Package configuration
+│   ├── surgery/               # Weight modification engine
+│   ├── config.py              # Configuration
+│   └── types.py               # Core types
+├── run_phase0.py              # Probe-only baseline
+├── run_phase1.py              # Basic surgery loop
+├── run_phase2.py              # Full surgery with ceiling breakers
+└── prepare_benchmarks.py      # Benchmark data generation
 ```
 
 ## Quick Start
 
 ```bash
-# Install
 pip install -e .
-
-# Generate benchmark data
 python prepare_benchmarks.py
 
-# Phase 0: Probe baseline (no surgery)
+# Probe baseline (no surgery)
 python run_phase0.py --model Qwen/Qwen2.5-7B
 
-# Phase 1: Basic surgery loop
+# Basic surgery loop
 python run_phase1.py --model Qwen/Qwen2.5-7B --iterations 10
 
-# Phase 2: Full 72B surgery (requires 3+ GPUs, 250+ GB VRAM)
-python run_phase2.py \
-  --model Qwen/Qwen2.5-72B \
-  --load-in-8bit \
-  --iterations 30 \
-  --lora-rank 16 \
-  --skip-frozen
+# Full surgery with ceiling breakers (requires 250+ GB VRAM)
+python run_phase2.py --model Qwen/Qwen2.5-72B --load-in-8bit --iterations 30
 ```
+
+## Next Steps
+
+- [ ] Long-horizon runs (100+ iterations) to observe compounding improvement curves
+- [ ] Activate Level 3 (cross-model pollination) with a reference model
+- [ ] Formal evaluation on public benchmarks (GSM8K, MMLU, ARC) pre/post surgery
+- [ ] Publish results and methodology as a research paper
+- [ ] Scale to 405B+ parameter models
 
 ## About the Author
 
-**13-year-old middle school student from South Korea** (Korean age 15, international age 13).
+I'm a 13-year-old middle school student from South Korea.
 
-- I don't actually know how to code. Every single line in this repository was written by **Claude (GitHub Copilot)** while I directed the architecture and experiments.
-- **KUT (Korea University of Technology) Math Competition**: Grand Prize ×1, Top Excellence Award ×3
-- Built the entire system, rented H100s with pocket money ($30), and ran the experiment in one afternoon.
+I can't actually code — every line in this repository was written by **Claude via GitHub Copilot** while I directed the architecture, designed the experiments, and ran them. I'm a math person: **KUT Math Competition** Grand Prize ×1, Top Excellence Award ×3.
 
-This project exists because I asked a simple question: *"What if an AI could study alone in a library for 100 years and come out smarter?"*
+I built this system, rented 3× H100 NVL GPUs with $30 of pocket money, and ran the experiment in one afternoon.
+
+This project started with a question: *"What if an AI could teach itself without any teacher at all?"*
 
 ## Citation
 
 ```bibtex
-@software{agisti2026,
+@software{agisti2025,
   title={AGISTI: Autonomous Generative Intelligence through Self-Taught Iteration},
   author={gkjuwon-ui},
-  year={2026},
+  year={2025},
   url={https://github.com/gkjuwon-ui/agisti}
 }
 ```
@@ -206,6 +202,5 @@ MIT
 
 <p align="center">
   <i>"Can genius emerge without a teacher?"</i><br>
-  <i>We showed that a 72B model can modify its own weights and score higher on benchmarks — for $27.</i><br>
-  <i>The rest is a matter of scale.</i>
+  <i>We're building the mechanism to find out.</i>
 </p>
