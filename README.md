@@ -87,7 +87,7 @@ AGISTI uses three languages, each handling what it does best:
 │    │                              │   │                           │         │
 │    ▼                              │   ▼                           │         │
 │  ┌─────────────────────┐          │   ┌──────────────────────┐    │         │
-│  │     Rust (agisti-core)         │   │     Go (agisti-go)        │     m   │
+│  │     Rust (agisti-core)         │   │     Go (agisti-go)        │         │
 │  │  ─────────────────  │          │   │  ─────────────────   │    │         │
 │  │  · CKA all-pairs    │          │  · Async checkpoint      │    │         │
 │  │    (rayon parallel) │          │   │    saves (goroutines)│    │         │
