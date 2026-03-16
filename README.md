@@ -87,9 +87,9 @@ AGISTI uses three languages, each handling what it does best:
 │    │                              │   │                           │         │
 │    ▼                              │   ▼                           │         │
 │  ┌─────────────────────┐          │   ┌──────────────────────┐    │         │
-│  │     Rust (agisti-core)         │   │     Go (agisti-go)        │         │
+│  │     Rust (agisti-core)         │   │     Go (agisti-go)   │    │         │
 │  │  ─────────────────  │          │   │  ─────────────────   │    │         │
-│  │  · CKA all-pairs    │          │  · Async checkpoint      │    │         │
+│  │  · CKA all-pairs    │          │   │  · Async checkpoint  │    │         │
 │  │    (rayon parallel) │          │   │    saves (goroutines)│    │         │
 │  │  · SHA-256 hashing  │          │   │  · RunPod API client │    │         │
 │  │    (ring, multi-    │          │   │    (connection pool) │    │         │
