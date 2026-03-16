@@ -81,29 +81,29 @@ AGISTI uses three languages, each handling what it does best:
 
 ```
 ┌──────────────────────────── Python (Orchestrator) ──────────────────────────┐
-│  Strategy · Config · Judgment · Model I/O · HuggingFace Integration        │
+│  Strategy · Config · Judgment · Model I/O · HuggingFace Integration         │
 │                                                                             │
-│    ┌────────── PyO3 FFI ──────────┐   ┌────────── gRPC ──────────┐         │
-│    │                              │   │                          │         │
-│    ▼                              │   ▼                          │         │
-│  ┌─────────────────────┐        │   ┌──────────────────────┐    │         │
-│  │     Rust (agisti-core)      │   │     Go (agisti-go)        │    │         │
-│  │  ─────────────────  │        │   │  ─────────────────   │    │         │
-│  │  · CKA all-pairs   │        │   │  · Async checkpoint  │    │         │
-│  │    (rayon parallel) │        │   │    saves (goroutines)│    │         │
-│  │  · SHA-256 hashing  │        │   │  · RunPod API client │    │         │
-│  │    (ring, multi-    │        │   │    (connection pool)  │    │         │
-│  │     threaded)       │        │   │  · Garbage collection│    │         │
-│  │  · Statistics       │        │   │                      │    │         │
-│  │    (McNemar, Welch) │        │   └──────────────────────┘    │         │
-│  │  · LoRA norm check  │        │                               │         │
-│  └─────────────────────┘        │   ┌──────────────────────┐    │         │
-│                                 │   │    vLLM / SGLang     │    │         │
-│                                 │   │  ─────────────────   │    │         │
-│                                 │   │  · PagedAttention    │    │         │
-│                                 │   │  · Continuous batch   │    │         │
-│                                 │   │  · CUDA graph cache  │    │         │
-│                                 │   └──────────────────────┘    │         │
+│    ┌────────── PyO3 FFI ──────────┐   ┌────────── gRPC ───────────┐         │
+│    │                              │   │                           │         │
+│    ▼                              │   ▼                           │         │
+│  ┌─────────────────────┐          │   ┌──────────────────────┐    │         │
+│  │     Rust (agisti-core)         │   │     Go (agisti-go)        │     m   │
+│  │  ─────────────────  │          │   │  ─────────────────   │    │         │
+│  │  · CKA all-pairs    │          │  · Async checkpoint      │    │         │
+│  │    (rayon parallel) │          │   │    saves (goroutines)│    │         │
+│  │  · SHA-256 hashing  │          │   │  · RunPod API client │    │         │
+│  │    (ring, multi-    │          │   │    (connection pool) │    │         │
+│  │     threaded)       │          │   │  · Garbage collection│    │         │
+│  │  · Statistics       │          │   │                      │    │         │
+│  │    (McNemar, Welch) │          │   └──────────────────────┘    │         │
+│  │  · LoRA norm check  │          │                               │         │
+│  └─────────────────────┘          │   ┌──────────────────────┐    │         │
+│                                   │   │    vLLM / SGLang     │    │         │
+│                                   │   │  ─────────────────   │    │         │
+│                                   │   │  · PagedAttention    │    │         │
+│                                   │   │  · Continuous batch  │    │         │
+│                                   │   │  · CUDA graph cache  │    │         │
+│                                   │   └──────────────────────┘    │         │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
