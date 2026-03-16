@@ -307,16 +307,31 @@ class FrozenMask:
                 return module
         return None
 
-    def _compute_layer_checksum(self, module: nn.Module) -> str:
+    def _compute_layer_checksum(
+        self,
+        module: nn.Module,
+        fast: bool = True,
+    ) -> str:
         """
-        Compute SHA-256 checksum of all parameters in a module.
+        Compute integrity fingerprint for a module's parameters.
 
-        Concatenates all parameter bytes and hashes them.
-        This is deterministic for the same parameter values.
+        When fast=True (default), uses norm+mean+element fingerprinting
+        which stays on GPU and avoids expensive .cpu().numpy().tobytes().
+        When fast=False, uses cryptographic SHA-256 (slow but exact).
         """
+        if fast:
+            parts: list[str] = []
+            for name, param in sorted(module.named_parameters()):
+                with torch.no_grad():
+                    t = param.detach()
+                    norm_val = torch.norm(t).item()
+                    mean_val = t.mean().item()
+                    first_val = t.flatten()[0].item()
+                parts.append(f"{name}:{norm_val:.10e},{mean_val:.10e},{first_val:.10e}")
+            return hashlib.sha256("|".join(parts).encode()).hexdigest()
+
         hasher = hashlib.sha256()
         for name, param in sorted(module.named_parameters()):
-            # Convert to bytes deterministically
             param_bytes = param.detach().cpu().float().numpy().tobytes()
             hasher.update(name.encode("utf-8"))
             hasher.update(param_bytes)

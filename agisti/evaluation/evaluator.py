@@ -195,7 +195,19 @@ class ModelEvaluator:
         tokenizer: Any,
         problems: list[Problem],
     ) -> list[Solution]:
-        """Generate solutions for a batch of problems."""
+        """Generate solutions for a batch of problems using true batched generation."""
+        from agisti.generation.prompt_utils import format_for_model
+
+        # Prepare all prompts
+        prompts = [self._format_prompt(p) for p in problems]
+
+        # Try true batched generation first
+        try:
+            return self._batched_generate(model, tokenizer, problems, prompts)
+        except Exception as e:
+            logger.debug("Batched generation failed (%s), falling back to sequential", e)
+
+        # Fallback: sequential
         solutions = []
         for problem in problems:
             try:
@@ -210,6 +222,64 @@ class ModelEvaluator:
                 chain_of_thought="",
                 tokens_generated=len(answer.split()),
                 generation_time_seconds=0.0,
+            ))
+
+        return solutions
+
+    def _batched_generate(
+        self,
+        model: Any,
+        tokenizer: Any,
+        problems: list[Problem],
+        prompts: list[str],
+    ) -> list[Solution]:
+        """True batched generation using left-padded inputs."""
+        from agisti.generation.prompt_utils import format_for_model
+
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+
+        # Tokenize all prompts with left-padding for generation
+        original_side = getattr(tokenizer, 'padding_side', 'right')
+        tokenizer.padding_side = 'left'
+        try:
+            batch_inputs = tokenizer(
+                prompts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=2048,
+            )
+        finally:
+            tokenizer.padding_side = original_side
+
+        device = next(model.parameters()).device
+        input_ids = batch_inputs["input_ids"].to(device)
+        attention_mask = batch_inputs["attention_mask"].to(device)
+        input_lengths = attention_mask.sum(dim=1)
+
+        start = time.monotonic()
+        with torch.no_grad():
+            outputs = model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=self.max_gen_tokens,
+                temperature=self.temperature if self.temperature > 0 else None,
+                do_sample=self.temperature > 0,
+                pad_token_id=tokenizer.pad_token_id,
+            )
+        gen_time = time.monotonic() - start
+
+        solutions = []
+        for i, problem in enumerate(problems):
+            new_tokens = outputs[i][input_ids.shape[1]:]
+            answer = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+            solutions.append(Solution(
+                problem_id=problem.id,
+                answer=answer,
+                chain_of_thought="",
+                tokens_generated=len(answer.split()),
+                generation_time_seconds=gen_time / len(problems),
             ))
 
         return solutions

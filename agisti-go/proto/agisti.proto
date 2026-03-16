@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+package agisti;
+
+option go_package = "github.com/gkjuwon-ui/agisti/agisti-go/proto";
+
+// ═════════════════════════════════════════════════════
+// Checkpoint Service — async model checkpoint I/O
+// ═════════════════════════════════════════════════════
+
+service CheckpointService {
+  // Queue an async save — returns immediately, saves in background
+  rpc SaveCheckpoint(SaveRequest) returns (SaveResponse);
+
+  // Check status of a queued save
+  rpc GetSaveStatus(StatusRequest) returns (StatusResponse);
+
+  // Load checkpoint metadata (model loading stays in Python/PyTorch)
+  rpc GetCheckpointInfo(InfoRequest) returns (CheckpointInfo);
+
+  // List available checkpoints
+  rpc ListCheckpoints(ListRequest) returns (ListResponse);
+
+  // Garbage collect old checkpoints
+  rpc GarbageCollect(GCRequest) returns (GCResponse);
+}
+
+message SaveRequest {
+  string checkpoint_dir = 1;
+  string branch = 2;
+  int32 epoch = 3;
+  int32 iteration = 4;
+  double score = 5;
+  map<string, double> domain_scores = 6;
+  map<string, string> frozen_checksums = 7;
+  bytes model_state = 8;      // serialized state dict
+  bytes optimizer_state = 9;   // optional
+  string strategy_json = 10;
+}
+
+message SaveResponse {
+  string job_id = 1;
+  bool accepted = 2;
+}
+
+message StatusRequest {
+  string job_id = 1;
+}
+
+message StatusResponse {
+  enum Status {
+    PENDING = 0;
+    IN_PROGRESS = 1;
+    COMPLETED = 2;
+    FAILED = 3;
+  }
+  Status status = 1;
+  string error = 2;
+  int64 bytes_written = 3;
+  double elapsed_seconds = 4;
+}
+
+message InfoRequest {
+  string checkpoint_path = 1;
+}
+
+message CheckpointInfo {
+  int32 epoch = 1;
+  int32 iteration = 2;
+  double timestamp = 3;
+  string path = 4;
+  double weighted_score = 5;
+  map<string, double> domain_scores = 6;
+  string branch = 7;
+  int64 file_size_bytes = 8;
+}
+
+message ListRequest {
+  string branch = 1;
+  int32 limit = 2;
+}
+
+message ListResponse {
+  repeated CheckpointInfo checkpoints = 1;
+}
+
+message GCRequest {
+  int32 keep_last_n = 1;
+  bool keep_best = 2;
+}
+
+message GCResponse {
+  int32 deleted_count = 1;
+  int64 freed_bytes = 2;
+}
+
+// ═════════════════════════════════════════════════════
+// RunPod Service — GPU pod management
+// ═════════════════════════════════════════════════════
+
+service RunPodService {
+  // Create a new GPU pod
+  rpc CreatePod(CreatePodRequest) returns (PodInfo);
+
+  // Get pod status
+  rpc GetPodStatus(PodStatusRequest) returns (PodInfo);
+
+  // Stop a pod
+  rpc StopPod(StopPodRequest) returns (StopPodResponse);
+
+  // List running pods
+  rpc ListPods(ListPodsRequest) returns (ListPodsResponse);
+}
+
+message CreatePodRequest {
+  string name = 1;
+  string gpu_type = 2;
+  int32 gpu_count = 3;
+  string image = 4;
+  int32 volume_gb = 5;
+  map<string, string> env = 6;
+}
+
+message PodInfo {
+  string id = 1;
+  string name = 2;
+  string status = 3;
+  string gpu_type = 4;
+  int32 gpu_count = 5;
+  string ip = 6;
+  int32 port = 7;
+  double cost_per_hour = 8;
+}
+
+message PodStatusRequest {
+  string pod_id = 1;
+}
+
+message StopPodRequest {
+  string pod_id = 1;
+}
+
+message StopPodResponse {
+  bool success = 1;
+}
+
+message ListPodsRequest {}
+
+message ListPodsResponse {
+  repeated PodInfo pods = 1;
+}

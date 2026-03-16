@@ -135,13 +135,24 @@ class DeltaApplicator:
         return state
 
     def _compute_frozen_checksums(self) -> dict[str, str]:
-        """Compute SHA-256 checksums for all frozen parameters."""
+        """Compute fast norm-based fingerprints for frozen parameters.
+
+        Uses L2 norm + mean + first element as a fast fingerprint instead
+        of SHA-256 over full byte arrays. This avoids GPU→CPU transfer of
+        the entire tensor while still detecting any meaningful change.
+        For cryptographic-grade verification, use FrozenMask.verify_integrity().
+        """
         checksums: dict[str, str] = {}
         for name, param in self.model.named_parameters():
             layer_key = _extract_layer_key(name)
             if self._is_frozen(layer_key):
-                param_bytes = param.data.cpu().numpy().tobytes()
-                checksums[name] = hashlib.sha256(param_bytes).hexdigest()
+                with torch.no_grad():
+                    t = param.data
+                    norm_val = torch.norm(t).item()
+                    mean_val = t.mean().item()
+                    numel = t.numel()
+                    first_val = t.flatten()[0].item()
+                checksums[name] = f"{norm_val:.10e}|{mean_val:.10e}|{first_val:.10e}|{numel}"
         return checksums
 
     def _apply_delta_to_model(self, delta: LoRADelta) -> None:

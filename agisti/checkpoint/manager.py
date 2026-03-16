@@ -108,14 +108,45 @@ class CheckpointManager:
         ckpt_dir = self.checkpoints_dir / branch / ckpt_name
         ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save model state
+        # Save model state — async via thread to avoid blocking GPU
         model_path = ckpt_dir / "model.pt"
-        torch.save(model.state_dict(), model_path)
+        state_dict_cpu = {
+            k: v.cpu().clone() for k, v in model.state_dict().items()
+        }
 
-        # Save optimizer state if provided
+        import concurrent.futures
+
+        save_futures: list[concurrent.futures.Future] = []
+
+        def _save_model():
+            torch.save(state_dict_cpu, model_path)
+
+        executor = getattr(self, "_save_executor", None)
+        if executor is None:
+            self._save_executor = concurrent.futures.ThreadPoolExecutor(
+                max_workers=2, thread_name_prefix="ckpt-save",
+            )
+            executor = self._save_executor
+
+        # Wait for any previous async save to finish before starting new one
+        prev_future = getattr(self, "_prev_save_future", None)
+        if prev_future is not None:
+            prev_future.result()  # block until previous save done
+
+        save_futures.append(executor.submit(_save_model))
+
+        # Save optimizer state if provided (also async)
         if optimizer_state:
             opt_path = ckpt_dir / "optimizer.pt"
-            torch.save(optimizer_state, opt_path)
+            opt_copy = {
+                k: v.cpu().clone() if isinstance(v, torch.Tensor) else v
+                for k, v in optimizer_state.items()
+            }
+
+            def _save_opt():
+                torch.save(opt_copy, opt_path)
+
+            save_futures.append(executor.submit(_save_opt))
 
         # Build checkpoint info
         info = CheckpointInfo(
@@ -151,15 +182,30 @@ class CheckpointManager:
             encoding="utf-8",
         )
 
-        # Track metadata
+        # Track metadata (file size estimated, actual computed after save)
         ckpt_meta = CheckpointMetadata(
             info=info,
             strategy=strategy,
-            file_size_bytes=sum(
-                f.stat().st_size for f in ckpt_dir.rglob("*") if f.is_file()
-            ),
+            file_size_bytes=0,  # updated after async save completes
         )
         self._all_checkpoints.append(ckpt_meta)
+
+        # Store futures so next save waits for completion
+        def _on_save_done(meta=ckpt_meta, d=ckpt_dir):
+            meta.file_size_bytes = sum(
+                f.stat().st_size for f in d.rglob("*") if f.is_file()
+            )
+
+        import concurrent.futures
+
+        combined = concurrent.futures.Future()
+
+        def _wait_all(futures=save_futures, cb=_on_save_done):
+            for f in futures:
+                f.result()
+            cb()
+
+        self._prev_save_future = executor.submit(_wait_all)
 
         # Update best checkpoint
         if score > self._best_score:

@@ -295,25 +295,29 @@ class LayerMapper:
         )
 
         # Compute CKA between all layer pairs
+        # Use Rust-accelerated all-pairs when available (rayon parallel)
         mapping: dict[str, LayerMapping] = {}
 
-        for t_layer in target_layers:
-            if t_layer not in target_acts:
-                continue
+        # Filter to layers that have activations
+        valid_t = [l for l in target_layers if l in target_acts]
+        valid_r = [l for l in ref_layers if l in ref_acts]
 
-            best_cka = -1.0
-            best_ref_layer: str | None = None
+        if valid_t and valid_r:
+            from agisti.accel import fast_cka_all_pairs
 
-            for r_layer in ref_layers:
-                if r_layer not in ref_acts:
+            t_act_list = [target_acts[l] for l in valid_t]
+            r_act_list = [ref_acts[l] for l in valid_r]
+            cka_matrix = fast_cka_all_pairs(t_act_list, r_act_list)
+
+            for i, t_layer in enumerate(valid_t):
+                best_j = int(cka_matrix[i].argmax())
+                best_cka = float(cka_matrix[i, best_j])
+
+                if best_cka < self.min_cka:
                     continue
 
-                cka = compute_cka(target_acts[t_layer], ref_acts[r_layer])
-                if cka > best_cka:
-                    best_cka = cka
-                    best_ref_layer = r_layer
+                best_ref_layer = valid_r[best_j]
 
-            if best_ref_layer and best_cka >= self.min_cka:
                 # Compute Procrustes alignment for this pair
                 alignment = compute_procrustes(
                     ref_acts[best_ref_layer],

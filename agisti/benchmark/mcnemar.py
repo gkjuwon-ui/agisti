@@ -179,21 +179,8 @@ def _binomial_pmf(n: int, k: int, p: float) -> float:
     """Binomial probability mass function."""
     if k < 0 or k > n:
         return 0.0
-    coeff = _comb(n, k)
+    coeff = math.comb(n, k)
     return coeff * (p ** k) * ((1 - p) ** (n - k))
-
-
-def _comb(n: int, k: int) -> int:
-    """Compute C(n, k) using multiplicative formula."""
-    if k < 0 or k > n:
-        return 0
-    if k == 0 or k == n:
-        return 1
-    k = min(k, n - k)
-    result = 1
-    for i in range(k):
-        result = result * (n - i) // (i + 1)
-    return result
 
 
 def _chi2_survival(x: float, df: int = 1) -> float:

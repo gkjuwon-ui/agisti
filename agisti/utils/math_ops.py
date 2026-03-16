@@ -154,9 +154,7 @@ def compute_cka(
     """
     Compute CKA between two activation matrices.
 
-    CKA measures representational similarity between
-    two sets of activations (e.g., from different layers
-    or different models).
+    Uses Rust-accelerated backend when available, falls back to PyTorch.
 
     Args:
         X: Activation matrix (n_samples × dim_x).
@@ -171,6 +169,12 @@ def compute_cka(
             f"X and Y must have same number of samples: "
             f"{X.shape[0]} vs {Y.shape[0]}"
         )
+
+    # Try Rust fast-path
+    from agisti.accel import rust_available
+    if rust_available:
+        from agisti.accel import fast_cka_pair
+        return fast_cka_pair(X, Y, debiased=debiased)
 
     if debiased:
         return _debiased_cka(X, Y)

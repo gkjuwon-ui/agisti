@@ -1,0 +1,17 @@
+[package]
+name = "agisti-core"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance Rust core for AGISTI — CKA, SVD loops, integrity hashing, statistics"
+
+[lib]
+name = "agisti_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+numpy = "0.22"
+ndarray = { version = "0.16", features = ["rayon"] }
+rayon = "1.10"
+ring = "0.17"
+num-traits = "0.2"
